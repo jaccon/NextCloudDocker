@@ -1,0 +1,56 @@
+# NextCloud Dockerized
+# Developed by @jaccon
+# Updated 28/12/2019
+version: '2'
+
+volumes:
+  nextcloud:
+  mysql:
+
+services:
+  mysql:
+    image: mysql:5.7
+    container_name: nextcloud_db
+    ports:
+      - "3306:3306"
+    networks:
+      - hosting
+    volumes:
+      - ./database/data:/var/lib/mysql
+      - ./database/initdb.d:/docker-entrypoint-initdb.d
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    restart: always
+    volumes:
+      - ./database:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=nopassword
+      - MYSQL_PASSWORD=nopassword
+      - MYSQL_DATABASE=drive
+      - MYSQL_USER=drive
+  app:
+    image: nextcloud
+    ports:
+      - "80:80"
+    networks:
+      - hosting
+    links:
+      - mysql
+    volumes:
+      - ./src:/var/www/html
+    restart: always
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    depends_on:
+      - mysql
+    ports:
+      - "8080:80"
+    networks:
+      - hosting
+    environment:
+      - PMA_ARBITRARY=1
+      - PMA_HOST=mysql
+networks:
+  hosting:
+    ipam:
+      config:
+      - subnet: 172.16.240.0/24
